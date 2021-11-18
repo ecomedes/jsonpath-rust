@@ -108,7 +108,7 @@
 
 use serde_json::{Value};
 pub use crate::parser::parser::parse_json_path;
-use crate::path::{json_path_instance, PathInstance};
+pub use crate::path::{json_path_instance, PathInstance};
 pub use crate::parser::model::JsonPath;
 
 mod parser;
