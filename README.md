@@ -155,49 +155,67 @@ use serde_json::{json, Value};
 
 fn main() {
     let finder = JsonPathFinder::from_str(r#"{"first":{"second":[{"active":1},{"passive":1}]}}"#, "$.first.second[?(@.active)]")?;
-    let slice_of_data: Vec<&Value> = finder.find();
+    let slice_of_data: Vec<&Value> = finder.find_slice();
     assert_eq!(slice_of_data, vec![&json!({"active":1})]);
 }
 ```
 
-or even simpler:
+or with a separate instantiation:
 
 ```rust
- use crate::{JsonPathFinder};
-use serde_json::{json, Value};
+ use serde_json::{json,Value};
+ use crate::jsonpath_rust::{JsonPathFinder,JsonPathQuery,JsonPathInst};
+ use std::str::FromStr;
+fn test(){
+         let json: Value = serde_json::from_str("{}").unwrap();
+         let v = json.path("$..book[?(@.author size 10)].title").unwrap();
+         assert_eq!(v, json!([]));
 
-fn test(json: &str, path: &str, expected: Vec<&Value>) {
-    match JsonPathFinder::from_str(json, path) {
-        Ok(finder) => assert_eq!(finder.find(), expected),
-        Err(e) => panic!("error while parsing json or jsonpath: {}", e)
-    }
-}
+         let json: Value = serde_json::from_str("{}").unwrap();
+         let path = &json.path("$..book[?(@.author size 10)].title").unwrap();
+
+         assert_eq!(path, &json!(["Sayings of the Century"]));
+
+         let json: Box<Value> = serde_json::from_str("{}").unwrap();
+         let path: Box<JsonPathInst> = Box::from(JsonPathInst::from_str("$..book[?(@.author size 10)].title").unwrap());
+         let finder = JsonPathFinder::new(json, path);
+
+         let v = finder.find_slice();
+         assert_eq!(v, vec![&json!("Sayings of the Century")]);
+     }
+
 ```
 
-also it will work with the instances of [[Value]] as well.
+also, it will work with the instances of [[Value]] as well.
 
 ```rust
   use serde_json::Value;
-use crate::path::{json_path_instance, PathInstance};
+  use crate::jsonpath_rust::{JsonPathFinder,JsonPathQuery,JsonPathInst};
+  use crate::path::{json_path_instance, PathInstance};
 
-fn test(json: Value, path: &str) {
-    let path = parse_json_path(path).map_err(|e| e.to_string())?;
+fn test(json: Box<Value>, path: &str) {
+    let path = JsonPathInst::from_str(path).unwrap();
     JsonPathFinder::new(json, path)
 }
  ```
 
-also the trait can be used:
+also, the trait `JsonPathQuery` can be used:
 
 ```rust
 
 use serde_json::{json, Value};
 use jsonpath_rust::JsonPathQuery;
 
-fn test() {
-    let json: Value = serde_json::from_str("{}").expect("to get json");
-    let v = json.path("$..book[?(@.author size 10)].title").expect("the path is correct");
-    assert_eq!(v, json!([]));
-}
+fn test(){
+           let json: Value = serde_json::from_str("{}").unwrap();
+           let v = json.path("$..book[?(@.author size 10)].title").unwrap();
+           assert_eq!(v, json!([]));
+           
+           let json: Value = serde_json::from_str(template_json()).unwrap();
+           let path = &json.path("$..book[?(@.author size 10)].title").unwrap();
+  
+           assert_eq!(path, &json!(["Sayings of the Century"]));
+   }
 ```
 
 #### The structure
